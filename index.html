@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Kokito Star</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #090916;
+            --primary-pink: #ff2a6d;
+            --primary-cyan: #05d9e8;
+            --accent-purple: #7700ff;
+            --text-white: #ffffff;
+            --text-gray: #e0e0e0;
+            --success-green: #00ff9d;
+            --card-glass: rgba(255, 255, 255, 0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-white); min-height: 100vh; overflow-x: hidden; padding-bottom: 50px;}
+
+        /* Canvas Fondo */
+        #canvas-network { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.5; }
+
+        .app-container { max-width: 600px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
+
+        /* HEADER & LOGO GRANDE */
+        header { text-align: center; margin-bottom: 30px; margin-top: 10px; }
+        .logo { 
+            max-width: 240px; 
+            width: 100%;
+            height: auto;
+            margin-bottom: 15px; 
+            filter: drop-shadow(0 0 15px rgba(255, 42, 109, 0.4));
+        }
+
+        /* --- MENSAJE BIENVENIDA --- */
+        .welcome-box {
+            background: linear-gradient(135deg, rgba(5, 217, 232, 0.1), rgba(119, 0, 255, 0.1));
+            border: 1px solid var(--primary-cyan);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .welcome-box h3 { color: var(--primary-cyan); margin-bottom: 5px; }
+        .welcome-box p { font-size: 0.9rem; line-height: 1.5; }
+
+        /* --- ACORDEÓN --- */
+        .section-card {
+            background: var(--card-glass);
+            border-radius: 16px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .section-header {
+            padding: 18px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 4px solid transparent;
+        }
+
+        .section-title { font-weight: 600; font-size: 1.05rem; display: flex; align-items: center; gap: 12px; }
+        
+        /* Botón de Audio */
+        .audio-btn {
+            background: rgba(0,0,0,0.3); border: 1px solid var(--primary-cyan); color: var(--primary-cyan);
+            border-radius: 20px; padding: 5px 12px; display: flex; align-items: center; gap: 5px;
+            margin-left: auto; margin-right: 15px; cursor: pointer; transition: 0.2s; font-size: 0.75rem; font-weight: bold;
+        }
+        .audio-btn:hover { background: var(--primary-cyan); color: black; }
+        .audio-btn.playing { background: var(--primary-cyan); color: black; animation: pulse 1s infinite; }
+        
+        /* Estados Activos */
+        .section-card.active { border-color: var(--primary-cyan); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .section-card.active .section-header { background: rgba(5, 217, 232, 0.08); border-left-color: var(--primary-cyan); }
+        .icon-indicator { color: var(--text-gray); transition: transform 0.3s ease; }
+        .section-card.active .icon-indicator { transform: rotate(180deg); color: var(--primary-cyan); }
+
+        /* Contenido */
+        .section-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; padding: 0 25px; color: var(--text-gray); font-size: 0.95rem; line-height: 1.7; }
+        .section-card.active .section-content { padding: 25px; }
+
+        /* Listas numeradas */
+        .steps-list { list-style: none; margin-top: 10px; }
+        .steps-list li { position: relative; padding-left: 30px; margin-bottom: 15px; }
+        .steps-list li::before {
+            content: counter(step-counter); counter-increment: step-counter;
+            position: absolute; left: 0; top: 2px; width: 22px; height: 22px;
+            background: var(--primary-pink); color: white; border-radius: 50%;
+            text-align: center; font-size: 0.8rem; line-height: 22px; font-weight: bold;
+        }
+        .steps-list { counter-reset: step-counter; }
+
+        /* --- ANIMACIONES CSS --- */
+        .demo-container {
+            width: 100%; height: 100px; background: #161625; border-radius: 10px; border: 1px dashed #333;
+            display: flex; align-items: center; justify-content: center; margin: 15px 0; position: relative; overflow: hidden;
+        }
+        /* QR Animation */
+        .qr-box { width: 50px; height: 50px; border: 2px solid white; position: relative; background: repeating-linear-gradient(45deg, #333 0, #333 5px, #444 5px, #444 10px); }
+        .scan-line { width: 100%; height: 2px; background: var(--primary-cyan); box-shadow: 0 0 10px var(--primary-cyan); position: absolute; top: 0; animation: scan 2s infinite alternate; }
+        /* Click Animation */
+        .btn-fake { padding: 8px 15px; background: #333; border-radius: 5px; color: white; font-size:0.8rem; }
+        .cursor { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 16px solid var(--primary-pink); position: absolute; top: 20px; left: 20px; transform: rotate(-45deg); animation: clickBtn 2s infinite; }
+
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        @keyframes clickBtn { 0% { transform: translate(0,0) rotate(-45deg); } 50% { transform: translate(10px, 10px) rotate(-45deg) scale(0.9); } 100% { transform: translate(0,0) rotate(-45deg); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* Simulador */
+        .sim-input { width: 70%; padding: 10px; border-radius: 8px 0 0 8px; border: none; outline: none; }
+        .sim-btn { width: 30%; padding: 10px; border-radius: 0 8px 8px 0; border: none; background: var(--success-green); color: black; font-weight: bold; cursor: pointer; }
+        .sim-wrapper { display: flex; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas-network"></canvas>
+
+    <div class="app-container">
+        <header>
+            <img src="LOGO_KOKITO.svg" alt="Kokito Star" class="logo" onerror="this.style.display='none';">
+            <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--primary-pink); margin-bottom: 5px;">MANUAL VENDEDOR</h1>
+            <p style="color: var(--text-gray); font-size: 0.9rem;">Plataforma de Fidelidad</p>
+        </header>
+
+        <div class="welcome-box">
+            <h3>👋 ¡Hola compañero!</h3>
+            <p>Este manual es tu herramienta principal. Aquí aprenderás a registrar ventas y premiar a nuestros clientes. Si tienes dudas, pulsa el botón de <strong>"Escuchar"</strong> en cada sección.</p>
+        </div>
+
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title"><span style="font-size:1.4rem">🔐</span> 1. Iniciar Sesión</div>
+                <button class="audio-btn" onclick="readText(event, 'text-sec1')">🔊 Escuchar</button>
+                <div class="icon-indicator">▼</div>
+            </div>
+            <div class="section-content" id="text-sec1">
+                <p>Vamos a empezar configurando tu acceso. Sigue estos pasos:</p>
+                <ul class="steps-list">
+                    <li>Abre el navegador de tu celular (Chrome o Safari).</li>
+                    <li>Ingresa a la dirección: <br><strong style="color:var(--primary-cyan)">www.kokitostar.com/fidelidad</strong></li>
+                    <li>Escribe tu correo electrónico y tu contraseña asignada.</li>
+                    <li>Dale clic al botón <strong>"Iniciar Sesión"</strong>.</li>
+                </ul>
+                <p><em>Nota: Una vez entres, verás tu panel de control con todas las herramientas listas.</em></p>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title"><span style="font-size:1.4rem">📸</span> 2. Escanear QR</div>
+                <button class="audio-btn" onclick="readText(event, 'text-sec2')">🔊 Escuchar</button>
+                <div class="icon-indicator">▼</div>
+            </div>
+            <div class="section-content" id="text-sec2">
+                <p>Cuando un cliente llegue a comprar, pídele su código QR (en su celular o impreso).</p>
+                
+                <div class="demo-container">
+                    <div class="qr-box"><div class="scan-line"></div></div>
+                </div>
+
+                <ul class="steps-list">
+                    <li>En tu panel, busca el botón grande que dice <strong>"Escanear QR"</strong>.</li>
+                    <li>Tu celular pedirá permiso para usar la cámara. Dale a <strong>"Permitir"</strong>.</li>
+                    <li>Apunta la cámara al código del cliente hasta que lo detecte.</li>
+                </ul>
+                <p style="background: rgba(255, 42, 109, 0.1); padding: 10px; border-radius: 5px; border-left: 3px solid var(--primary-pink);">
+                    <strong>Tip Importante:</strong> Asegúrate de que haya buena luz y limpia el lente de tu cámara si se ve borroso.
+                </p>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title"><span style="font-size:1.4rem">🔦</span> 3. Si el escaneo falla</div>
+                <button class="audio-btn" onclick="readText(event, 'text-sec3')">🔊 Escuchar</button>
+                <div class="icon-indicator">▼</div>
+            </div>
+            <div class="section-content" id="text-sec3">
+                <p>A veces la cámara no enfoca o el celular del cliente tiene la pantalla muy rayada. ¡No te preocupes!</p>
+                <ul class="steps-list">
+                    <li>En el panel, usa la opción de <strong>"Búsqueda Manual"</strong>.</li>
+                    <li>Pídele al cliente su <strong>número de teléfono</strong>.</li>
+                    <li>Escríbelo en el buscador.</li>
+                </ul>
+                <p>El sistema te mostrará la información del cliente (nombre, nivel y puntos) igual que si hubieras escaneado el QR.</p>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title"><span style="font-size:1.4rem">💰</span> 4. Registrar Venta</div>
+                <button class="audio-btn" onclick="readText(event, 'text-sec4')">🔊 Escuchar</button>
+                <div class="icon-indicator">▼</div>
+            </div>
+            <div class="section-content" id="text-sec4">
+                <p>Una vez tengas al cliente en pantalla, verás el botón <strong>"Registrar Venta"</strong>.</p>
+                
+                <div class="demo-container">
+                    <div class="btn-fake">CONFIRMAR</div>
+                    <div class="cursor"></div>
+                </div>
+
+                <ul class="steps-list">
+                    <li>Dale clic al botón.</li>
+                    <li>Escribe el <strong>monto total</strong> de la compra en pesos (sin puntos ni comas).</li>
+                    <li><em>Ejemplo: Si compró 10 mil pesos, escribes 10000.</em></li>
+                    <li>Confirma la operación.</li>
+                </ul>
+                <p>El sistema calcula solo: <strong>3 puntos por cada mil pesos</strong>. El cliente recibirá sus puntos al instante.</p>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title"><span style="font-size:1.4rem">🎁</span> 5. Redimir Cupones</div>
+                <button class="audio-btn" onclick="readText(event, 'text-sec5')">🔊 Escuchar</button>
+                <div class="icon-indicator">▼</div>
+            </div>
+            <div class="section-content" id="text-sec5">
+                <p>Cuando un cliente acumula <strong>300 puntos</strong>, gana un tatuaje gratis y le aparece un cupón.</p>
+                <ul class="steps-list">
+                    <li>Selecciona la opción <strong>"Validar Cupón"</strong>.</li>
+                    <li>Escanea el QR del premio o ingresa el código manual.</li>
+                    <li>El sistema te dirá si es válido.</li>
+                    <li>Si todo está bien, presiona <strong>"Redimir"</strong> para marcarlo como entregado.</li>
+                </ul>
+                <p>¡Así evitamos que usen el mismo cupón dos veces!</p>
+            </div>
+        </div>
+
+        <div class="section-card" style="border-color: var(--success-green);">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title"><span style="font-size:1.4rem">🎮</span> Zona de Práctica</div>
+                <div class="icon-indicator">▼</div>
+            </div>
+            <div class="section-content">
+                <p>Escribe un valor abajo para ver cuántos puntos ganaría el cliente:</p>
+                <div class="sim-wrapper">
+                    <input type="number" id="simMonto" class="sim-input" placeholder="Ej: 20000">
+                    <button class="sim-btn" onclick="simular()">Calcular</button>
+                </div>
+                <p id="simResult" style="margin-top:10px; font-weight:bold; color:var(--success-green);"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. CONFIGURACIÓN DE VOZ (Masculina/Colombiana) ---
+        let voices = [];
+        window.speechSynthesis.onvoiceschanged = () => { voices = window.speechSynthesis.getVoices(); };
+
+        function readText(event, elementId) {
+            event.stopPropagation();
+            const btn = event.target;
+            
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                btn.classList.remove('playing');
+                btn.innerText = "🔊 Escuchar";
+                return;
+            }
+
+            const text = document.getElementById(elementId).innerText;
+            const utterance = new SpeechSynthesisUtterance(text);
+
+            let selectedVoice = voices.find(v => v.lang === 'es-CO') || 
+                                voices.find(v => v.lang === 'es-419') || 
+                                voices.find(v => v.lang.includes('es'));
+
+            if (selectedVoice) { utterance.voice = selectedVoice; }
+
+            utterance.pitch = 0.8; // Voz grave (Hombre)
+            utterance.rate = 1.0;
+            utterance.volume = 1;
+
+            utterance.onstart = () => { btn.classList.add('playing'); btn.innerText = "⏹ Detener"; };
+            utterance.onend = () => { btn.classList.remove('playing'); btn.innerText = "🔊 Escuchar"; };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // --- 2. LÓGICA SIMULADOR ---
+        function simular() {
+            const val = document.getElementById('simMonto').value;
+            if(val > 0) {
+                const pt = Math.floor((val/1000)*3);
+                document.getElementById('simResult').innerText = `✅ ¡Correcto! Serían ${pt} Puntos Kokito.`;
+            } else {
+                document.getElementById('simResult').innerText = "❌ Escribe un valor válido.";
+            }
+        }
+
+        // --- 3. ACORDEÓN ---
+        function toggleSection(header) {
+            const card = header.parentElement;
+            const content = card.querySelector('.section-content');
+            card.classList.toggle('active');
+            
+            if (card.classList.contains('active')) {
+                content.style.maxHeight = content.scrollHeight + 50 + "px";
+            } else {
+                content.style.maxHeight = null;
+            }
+        }
+
+        // --- 4. FONDO ANIMADO ---
+        const canvas = document.getElementById('canvas-network');
+        const ctx = canvas.getContext('2d');
+        let w, h, particles = [];
+        const colors = ['#ff2a6d', '#05d9e8', '#7700ff'];
+
+        function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+        class Particle {
+            constructor() {
+                this.x = Math.random() * w; this.y = Math.random() * h;
+                this.vx = (Math.random() - 0.5) * 0.5; this.vy = (Math.random() - 0.5) * 0.5;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+            update() {
+                if(this.x < 0 || this.x > w) this.vx *= -1;
+                if(this.y < 0 || this.y > h) this.vy *= -1;
+                this.x += this.vx; this.y += this.vy;
+            }
+            draw() { ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI*2); ctx.fillStyle = this.color; ctx.fill(); }
+        }
+        function init() { particles = []; for(let i=0; i<45; i++) particles.push(new Particle()); }
+        function loop() {
+            ctx.clearRect(0,0,w,h);
+            particles.forEach(p => { p.update(); p.draw(); });
+            for(let a of particles) {
+                for(let b of particles) {
+                    let d = Math.hypot(a.x-b.x, a.y-b.y);
+                    if(d < 110) {
+                        ctx.strokeStyle = `rgba(120,50,255,${0.7 - d/110})`;
+                        ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(loop);
+        }
+        window.onresize = () => { resize(); init(); }; resize(); init(); loop();
+    </script>
+</body>
+</html>
